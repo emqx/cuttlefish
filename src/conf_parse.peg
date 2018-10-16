@@ -27,7 +27,7 @@ config <- line* %{
 
 %% Lines are actual settings, comments, or horizontal whitespace,
 %% terminated by an end-of-line or end-of-file.
-line <- ((setting / comment / ws+) (crlf / eof)) / crlf %{
+line <- ((setting / comment / ws+ / placeholder) (crlf / eof)) / crlf %{
     case Node of
         [ Line, _EOL ] -> Line;
         Line -> Line
@@ -60,6 +60,9 @@ value <- (!(ws* crlf) .)+ %{
 %% A comment is any line that begins with a # sign, leading whitespace
 %% allowed.
 comment <- ws* "#" (!crlf .)* `comment`;
+
+%% A placeholder is any line that is surrounded with {{}}
+placeholder <- ws* "{{" (!crlf !"}}" .)+ "}}" `placeholder`;
 
 %% A word is one or more of letters, numbers and dashes or
 %% underscores.
@@ -133,6 +136,7 @@ ws <- [ \t] `ws`;
 %% @doc Only let through lines that are not comments or whitespace.
 is_setting(ws) -> false;
 is_setting(comment) -> false;
+is_setting(placeholder) -> false;
 is_setting(_) -> true.
 
 %% @doc Removes escaped dots from keys

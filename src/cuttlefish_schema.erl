@@ -158,7 +158,7 @@ string(S, {T, M, V}) ->
         {error, {Line, erl_scan, _}, _} ->
             Error = {erl_scan, Line},
             ErrStr = cuttlefish_error:xlate(Error),
-            lager:error(lists:flatten(ErrStr)),
+            logger:error(lists:flatten(ErrStr)),
             {errorlist, [{error, Error}]}
     end.
 
@@ -372,7 +372,6 @@ parse_bad_datatype_test() ->
     ?assertEqual([], cuttlefish_lager_test_backend:get_logs()).
 
 files_test() ->
-    lager:start(),
     %% files/1 takes a list of schemas in priority order.
     %% Loads them in reverse order, as things are overridden
     {Translations, Mappings, Validators} = files(

@@ -2,24 +2,26 @@ DIALYZER_APPS = kernel stdlib sasl erts ssl tools os_mon runtime_tools crypto in
 	public_key mnesia syntax_tools compiler
 COMBO_PLT = $(HOME)/.cuttlefish_combo_dialyzer_plt
 
-.PHONY: deps
+REBAR := rebar3
 
-all: deps compile
-	./rebar skip_deps=true escriptize
+.PHONY: all deps
+
+all: compile
 
 deps:
-	./rebar get-deps
+	$(REBAR) get-deps
 
 docsclean:
 	@rm -rf doc/*.png doc/*.html doc/*.css doc/edoc-info
 
 compile: deps
-	./rebar compile
+	$(REBAR) compile
 
 clean:
-	@./rebar clean
+	@rm -rf _build rebar.lock
 
-distclean: clean
-	@rm -rf cuttlefish deps
+eunit: compile
+	$(REBAR) eunit
 
-include tools.mk
+dialyzer:
+	$(REBAR) dialyzer

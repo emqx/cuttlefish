@@ -172,8 +172,6 @@ dump_to_file(ErlangTerm, Filename) ->
     _ = file:close(S),
     ok.
 
--ifdef(TEST).
-
 path_test() ->
     ?assertEqual(
        {ok, "disable"},
@@ -181,7 +179,6 @@ path_test() ->
     ok.
 
 multiple_schema_generate_templated_config_test() ->
-    lager:start(),
     Context = [
         {mustache, "mustache"}
               ],
@@ -193,8 +190,7 @@ multiple_schema_generate_templated_config_test() ->
                         ], []},
 
     Config = cuttlefish_unit:generate_templated_config("../test/sample_mustache.schema", [], Context, PrereqSchema),
-    lager:error("~p", [Config]),
+    logger:error("~p", [Config]),
     assert_config(Config, "app_a.setting_b", "/c/mustache/a.b"),
     ok.
 
--endif.
