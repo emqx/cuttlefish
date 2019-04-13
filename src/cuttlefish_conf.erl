@@ -298,27 +298,27 @@ generate_comments_test() ->
     ?assertEqual(["## Hi!", "## Bye!", "## ", "## Acceptable values:", "##   - text"], Comments).
 
 duplicates_test() ->
-    Conf = file("../test/multi1.conf"),
+    Conf = file(tp("multi1.conf")),
     ?assertEqual(2, length(Conf)),
     ?assertEqual("3", proplists:get_value(["a","b","c"], Conf)),
     ?assertEqual("1", proplists:get_value(["a","b","d"], Conf)),
     ok.
 
 duplicates_multi_test() ->
-    Conf = files(["../test/multi1.conf", "../test/multi2.conf"]),
+    Conf = files([tp("multi1.conf"), tp("multi2.conf")]),
     ?assertEqual(2, length(Conf)),
     ?assertEqual("4", proplists:get_value(["a","b","c"], Conf)),
     ?assertEqual("1", proplists:get_value(["a","b","d"], Conf)),
     ok.
 
 files_one_nonent_test() ->
-    Conf = files(["../test/multi1.conf", "../test/nonent.conf"]),
-    ?assertEqual({errorlist,[{error, {file_open, {"../test/nonent.conf", enoent}}}]}, Conf),
+    Conf = files([tp("multi1.conf"), tp("nonent.conf")]),
+    ?assertEqual({errorlist,[{error, {file_open, {tp("nonent.conf"), enoent}}}]}, Conf),
     ok.
 
 files_incomplete_parse_test() ->
-    Conf = file("../test/incomplete.conf"),
-    ?assertEqual({errorlist, [{error, {conf_syntax, {"../test/incomplete.conf", {3, 1}}}}]}, Conf),
+    Conf = file(tp("incomplete.conf")),
+    ?assertEqual({errorlist, [{error, {conf_syntax, {tp("incomplete.conf"), {3, 1}}}}]}, Conf),
     ok.
 
 generate_element_level_advanced_test() ->
@@ -351,5 +351,9 @@ assert_no_output(Setting) ->
                ]}),
 
     ?assertEqual([], generate_element(Mapping)).
+
+%% test-path
+tp(Name) ->
+    filename:join([code:lib_dir(cuttlefish), "test", Name]).
 
 -endif.
