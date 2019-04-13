@@ -1,5 +1,6 @@
 -module(cuttlefish_integration_test).
 
+-include("cuttlefish.hrl").
 -include_lib("eunit/include/eunit.hrl").
 -compile(export_all).
 
@@ -71,7 +72,6 @@ all_the_marbles_test() ->
     ok.
 
 multibackend_test() ->
-    lager:start(),
     Schema = cuttlefish_schema:files(["../test/riak.schema", "../test/multi_backend.schema"]),
 
     Conf = [
@@ -91,7 +91,7 @@ multibackend_test() ->
     Multi = proplists:get_value(multi_backend, KV),
 
     {<<"bitcask_mult">>, riak_kv_bitcask_backend, BitcaskProps} = lists:keyfind(<<"bitcask_mult">>, 1, Multi),
-    lager:info("BitcaskProps: ~p", [BitcaskProps]),
+    ?logger:info("BitcaskProps: ~p", [BitcaskProps]),
     ?assertEqual("/path/to/dat/cask", proplists:get_value(data_root, BitcaskProps)),
     ?assertEqual(4,                   proplists:get_value(open_timeout, BitcaskProps)),
     ?assertEqual(2147483648,          proplists:get_value(max_file_size, BitcaskProps)),
@@ -142,25 +142,22 @@ multibackend_test() ->
     ok.
 
 unset_translation_test() ->
-    lager:start(),
     Schema = cuttlefish_schema:files(["../test/unset_translation.schema"]),
     Conf = [
         {["a", "b"], "8"}
     ],
     NewConfig = cuttlefish_generator:map(Schema, Conf),
     Props = proplists:get_value(erlang, NewConfig),
-    lager:info("~p", [NewConfig]),
+    ?logger:info("~p", [NewConfig]),
     ?assertEqual(8, proplists:get_value(key, Props)).
 
 not_found_error_test() ->
-    lager:start(),
     Schema = cuttlefish_schema:files(["../test/throw_not_found.schema"]),
     Conf = [],
     NewConfig = cuttlefish_generator:map(Schema, Conf),
     ?assertMatch({error, apply_translations, _}, NewConfig).
 
 duration_test() ->
-    lager:start(),
     Schema = cuttlefish_schema:files(["../test/durations.schema"]),
 
     %% Test that the duration parsing doesn't emit "error" into the

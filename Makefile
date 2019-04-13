@@ -21,7 +21,7 @@ clean:
 	@rm -rf _build rebar.lock
 
 eunit: compile
-	$(REBAR) eunit
+	$(REBAR) eunit verbose=true
 
 dialyzer:
 	$(REBAR) dialyzer

@@ -41,30 +41,31 @@
      fuzzy_variable_match/2
 ]).
 
+-include("cuttlefish.hrl").
 
 %% @deprecated
 conf_get_value(Key, Conf) ->
-    logger:warning("cuttlefish_util:conf_get_value/2 has been deprecated. use cuttlefish:conf_get/2"),
+    ?logger:warning("cuttlefish_util:conf_get_value/2 has been deprecated. use cuttlefish:conf_get/2"),
     cuttlefish:conf_get(Key, Conf).
 
 %% @deprecated
 conf_get_value(Key, Conf, Default) ->
-    logger:warning("cuttlefish_util:conf_get_value/3 has been deprecated. use cuttlefish:conf_get/3"),
+    ?logger:warning("cuttlefish_util:conf_get_value/3 has been deprecated. use cuttlefish:conf_get/3"),
     cuttlefish:conf_get(Key, Conf, Default).
 
 %% @deprecated
 filter_by_variable_starts_with(Prefix, Conf) ->
-    logger:warning("cuttlefish_util:filter_by_variable_starts_with/2 has been deprecated. use cuttlefish_variable:filter_by_prefix/2"),
+    ?logger:warning("cuttlefish_util:filter_by_variable_starts_with/2 has been deprecated. use cuttlefish_variable:filter_by_prefix/2"),
     cuttlefish_variable:filter_by_prefix(Prefix, Conf).
 
 %% @deprecated
 matches_for_variable_def(VarDef, Conf) ->
-    logger:warning("cuttlefish_util:matches_for_variable_def/2 has been deprecated. use cuttlefish_variable:fuzzy_matches/2"),
+    ?logger:warning("cuttlefish_util:matches_for_variable_def/2 has been deprecated. use cuttlefish_variable:fuzzy_matches/2"),
     cuttlefish_variable:fuzzy_matches(VarDef, Conf).
 
 %% @deprecated
 fuzzy_variable_match(Var, VarDef) ->
-    logger:warning("cuttlefish_util:fuzzy_variable_match/2 has been deprecated. use cuttlefish_variable:is_fuzzy_match/2"),
+    ?logger:warning("cuttlefish_util:fuzzy_variable_match/2 has been deprecated. use cuttlefish_variable:is_fuzzy_match/2"),
     cuttlefish_variable:is_fuzzy_match(Var, VarDef).
 
 %% @doc replace the element in a proplist
@@ -169,16 +170,6 @@ levenshtein_test() ->
     ?assertEqual(1, levenshtein("anti_entropy", "anti-entropy")),
     ?assertEqual(4, levenshtein("", "four")),
     ?assertEqual(4, levenshtein("four", "")),
-    ok.
-
-print_error_test() ->
-    application:stop(lager),
-    case logger:error("Error") of
-        {error, lager_not_running} ->
-            ?assertEqual(ok, (cuttlefish_error:print("Error")));
-        Other ->
-            ?assertEqual({error, lager_not_running}, Other)
-    end,
     ok.
 
 ceiling_test() ->

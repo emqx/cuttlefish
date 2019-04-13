@@ -31,6 +31,8 @@
 -compile(export_all).
 -endif.
 
+-include("cuttlefish.hrl").
+
 cli_options() ->
 %% Option Name, Short Code, Long Code, Argument Spec, Help Message
 [
@@ -105,7 +107,7 @@ main(Args) ->
 
 %% This shows the effective configuration, including defaults
 effective(ParsedArgs) ->
-    logger:debug("cuttlefish `effective`", []),
+    ?logger:debug("cuttlefish `effective`", []),
     EtcDir = proplists:get_value(etc_dir, ParsedArgs),
 
     %% Should we even show this?
@@ -117,12 +119,12 @@ effective(ParsedArgs) ->
             AdvancedConfigFile = filename:join(EtcDir, "advanced.config"),
             AdvConfig = case filelib:is_file(AdvancedConfigFile) of
                 true ->
-                    logger:debug("~s/advanced.config detected, overlaying proplists", [EtcDir]),
+                    ?logger:debug("~s/advanced.config detected, overlaying proplists", [EtcDir]),
                     case file:consult(AdvancedConfigFile) of
                         {ok, [AdvancedConfig]} ->
                             AdvancedConfig;
                         {error, Error} ->
-                            logger:error("Error parsing advanced.config: ~s", [file:format_error(Error)]),
+                            ?logger:error("Error parsing advanced.config: ~s", [file:format_error(Error)]),
                             stop_deactivate()
                     end;
                 _ ->
@@ -162,7 +164,7 @@ describe(_ParsedArgs, []) ->
 describe(ParsedArgs, [Query|_]) when is_list(Query) ->
     QDef = cuttlefish_variable:tokenize(Query),
 
-    logger:debug("cuttlefish describe '~s'", [Query]),
+    ?logger:debug("cuttlefish describe '~s'", [Query]),
     {_, Mappings, _} = load_schema(ParsedArgs),
 
     FindResults = fun(QueryVar) ->
@@ -249,20 +251,20 @@ generate(ParsedArgs) ->
     %% even though cuttlefish is awesome
     FilesToUse = case {AppConfigExists, VMArgsExists} of
         {true, true} ->
-            logger:info("~s and ~s exists, disabling cuttlefish.", [ExistingAppConfigName, ExistingVMArgsName]),
-            logger:info("If you'd like to know more about cuttlefish, check your local library!", []),
-            logger:info(" or see http://github.com/basho/cuttlefish", []),
+            ?logger:info("~s and ~s exists, disabling cuttlefish.", [ExistingAppConfigName, ExistingVMArgsName]),
+            ?logger:info("If you'd like to know more about cuttlefish, check your local library!", []),
+            ?logger:info(" or see http://github.com/basho/cuttlefish", []),
             {ExistingAppConfigName, ExistingVMArgsName};
         {true, false} ->
-            logger:info("~s exists, generating vm.args", [ExistingAppConfigName]),
+            ?logger:info("~s exists, generating vm.args", [ExistingAppConfigName]),
             {_, NewVMArgs} = engage_cuttlefish(ParsedArgs),
             {ExistingAppConfigName, NewVMArgs};
         {false, true} ->
-            logger:info("~s exists, generating app.config", [ExistingVMArgsName]),
+            ?logger:info("~s exists, generating app.config", [ExistingVMArgsName]),
             {NewAppConfig, _} = engage_cuttlefish(ParsedArgs),
             {NewAppConfig, ExistingVMArgsName};
         _ ->
-            logger:info("No app.config or vm.args detected in ~s, activating cuttlefish", [EtcDir]),
+            ?logger:info("No app.config or vm.args detected in ~s, activating cuttlefish", [EtcDir]),
             engage_cuttlefish(ParsedArgs)
     end,
 
@@ -293,10 +295,10 @@ load_schema(ParsedArgs) ->
     SortedSchemaFiles = lists:sort(fun(A,B) -> A < B end, SchemaFiles),
     case length(SortedSchemaFiles) of
         0 ->
-            logger:debug("No Schema files found in specified", []),
+            ?logger:debug("No Schema files found in specified", []),
             stop_deactivate();
         _ ->
-            logger:debug("SchemaFiles: ~p", [SortedSchemaFiles])
+            ?logger:debug("SchemaFiles: ~p", [SortedSchemaFiles])
     end,
 
     Schema = cuttlefish_schema:files(SortedSchemaFiles),
@@ -310,10 +312,10 @@ load_schema(ParsedArgs) ->
 
 load_conf(ParsedArgs) ->
     ConfFiles = proplists:get_all_values(conf_file, ParsedArgs),
-    logger:debug("ConfFiles: ~p", [ConfFiles]),
+    ?logger:debug("ConfFiles: ~p", [ConfFiles]),
     case cuttlefish_conf:files(ConfFiles) of
         {errorlist, Errors} ->
-            _ = [ logger:error(cuttlefish_error:xlate(E)) ||
+            _ = [ ?logger:error(cuttlefish_error:xlate(E)) ||
                     {error, E} <- Errors],
             stop_deactivate(),
             {errorlist, Errors};
@@ -336,7 +338,7 @@ writable_destination_path(ParsedArgs) ->
         ok ->
             AbsoluteDestPath;
         {error, E} ->
-            logger:error(
+            ?logger:error(
                 "Error creating ~s: ~s",
                 [AbsoluteDestPath, file:format_error(E)]),
             error
@@ -361,14 +363,14 @@ engage_cuttlefish(ParsedArgs) ->
     DestinationVMArgsFilename = filename_maker("vm", Date, "args"),
     DestinationVMArgs = filename:join(AbsPath, DestinationVMArgsFilename),
 
-    logger:debug("Generating config in: ~p", [Destination]),
+    ?logger:debug("Generating config in: ~p", [Destination]),
 
     Schema = load_schema(ParsedArgs),
 
     Conf = load_conf(ParsedArgs),
     NewConfig = case cuttlefish_generator:map(Schema, Conf) of
         {error, Phase, {errorlist, Errors}} ->
-            logger:error("Error generating configuration in phase ~s", [Phase]),
+            ?logger:error("Error generating configuration in phase ~s", [Phase]),
             _ = [ cuttlefish_error:print(E) || E <- Errors],
             stop_deactivate();
         ValidConfig -> ValidConfig
@@ -377,15 +379,15 @@ engage_cuttlefish(ParsedArgs) ->
     AdvancedConfigFile = filename:join(EtcDir, "advanced.config"),
     FinalConfig = case filelib:is_file(AdvancedConfigFile) of
         true ->
-            logger:info("~s/advanced.config detected, overlaying proplists", [EtcDir]),
+            ?logger:info("~s/advanced.config detected, overlaying proplists", [EtcDir]),
             case file:consult(AdvancedConfigFile) of
                 {ok, [AdvancedConfig]} ->
                     cuttlefish_advanced:overlay(NewConfig, AdvancedConfig);
                 {ok, OtherTerms} ->
-                    logger:error("Error parsing ~s, incorrect format: ~p", [AdvancedConfigFile, OtherTerms]),
+                    ?logger:error("Error parsing ~s, incorrect format: ~p", [AdvancedConfigFile, OtherTerms]),
                     stop_deactivate();
                 {error, Error} ->
-                    logger:error("Error parsing ~s: ~s", [AdvancedConfigFile, file:format_error(Error)]),
+                    ?logger:error("Error parsing ~s: ~s", [AdvancedConfigFile, file:format_error(Error)]),
                     stop_deactivate()
             end;
         _ ->
@@ -438,7 +440,7 @@ delete([File|Files], MaxHistory) ->
     case file:delete(File) of
         ok -> ok;
         {error, Reason} ->
-            logger:error("Could not delete ~s, ~p", [File, Reason])
+            ?logger:error("Could not delete ~s, ~p", [File, Reason])
     end,
     delete(Files, MaxHistory).
 
@@ -452,14 +454,14 @@ delete([File|Files], MaxHistory) ->
 maybe_log_file_error(_, ok) ->
     ok;
 maybe_log_file_error(Filename, {error, Reason}) ->
-    logger:error("Error writing ~s: ~s", [Filename, file:format_error(Reason)]),
+    ?logger:error("Error writing ~s: ~s", [Filename, file:format_error(Reason)]),
     ok.
 
 -spec check_existence(string(), string()) -> {boolean(), string()}.
 check_existence(EtcDir, Filename) ->
     FullName = filename:join(EtcDir, Filename), %% Barfolomew
     Exists = filelib:is_file(FullName),
-    logger:info("Checking ~s exists... ~p", [FullName, Exists]),
+    ?logger:info("Checking ~s exists... ~p", [FullName, Exists]),
     {Exists, FullName}.
 
 filename_maker(Filename, Date, Extension) ->
@@ -484,7 +486,7 @@ zero_pad(Integer) ->
     end.
 
 print_schema(Schema) ->
-    logger:info("Printing Schema Mappings"),
+    ?logger:info("Printing Schema Mappings"),
     {_, Mappings, _} = Schema,
 
     {Max, ListOfMappings} = lists:foldr(

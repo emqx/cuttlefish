@@ -1,5 +1,6 @@
 -module(cuttlefish_unit).
 
+-include("cuttlefish.hrl").
 -include_lib("eunit/include/eunit.hrl").
 -compile(export_all).
 
@@ -190,7 +191,7 @@ multiple_schema_generate_templated_config_test() ->
                         ], []},
 
     Config = cuttlefish_unit:generate_templated_config("../test/sample_mustache.schema", [], Context, PrereqSchema),
-    logger:error("~p", [Config]),
+    ?logger:error("~p", [Config]),
     assert_config(Config, "app_a.setting_b", "/c/mustache/a.b"),
     ok.
 

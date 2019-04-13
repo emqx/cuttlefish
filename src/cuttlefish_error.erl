@@ -35,6 +35,8 @@
         xlate/1
 ]).
 
+-include("cuttlefish.hrl").
+
 -ifdef(TEST).
 -include_lib("eunit/include/eunit.hrl").
 -compile(export_all).
@@ -178,12 +180,7 @@ print(FormatString, Args) ->
 print({error, ErrorTerm}) ->
     print(lists:flatten(xlate(ErrorTerm)));
 print(String) ->
-    case logger:error("~s", [String]) of
-        {error, lager_not_running} ->
-            io:format("~s~n", [String]),
-            ok;
-        ok -> ok
-    end.
+    ok = ?logger:error("~s", [String]).
 
 -ifdef(TEST).
 

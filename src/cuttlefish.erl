@@ -37,6 +37,8 @@
     warn/1
 ]).
 
+-include("cuttlefish.hrl").
+
 % @doc If DesiredMinimum =&lt; the OTP you're running, then return
 % IfGreaterOrEqual, otherwise IfLessThan.
 -spec otp(string(), any(), any()) -> any().
@@ -124,7 +126,7 @@ invalid(Reason) ->
 %% being logged.
 -spec warn(iodata()) -> ok.
 warn(Str) ->
-    logger:warning(Str, []).
+    ?logger:warning(Str, []).
 
 -ifdef(TEST).
 
