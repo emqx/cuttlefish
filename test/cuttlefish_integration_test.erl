@@ -6,7 +6,7 @@
 
 %% This test generates a default .conf file from the riak.schema. view it at ../generated.conf
 generated_conf_file_test() ->
-    {_, Mappings, _} = cuttlefish_schema:file("../test/riak.schema"),
+    {_, Mappings, _} = cuttlefish_schema:file(tp("riak.schema")),
     cuttlefish_conf:generate_file(Mappings, "../generated.conf"),
     %% Schema generated a conf file, let's parse it!
     Conf = cuttlefish_conf:file("../generated.conf"),
@@ -15,27 +15,27 @@ generated_conf_file_test() ->
 
 %% This test generates a .config file from the riak.schema. view it at ../generated.config
 generated_config_file_test() ->
-    Schema = cuttlefish_schema:file("../test/riak.schema"),
-    Conf = [], %% conf_parse:file("../test/riak.conf"),
+    Schema = cuttlefish_schema:file(tp("riak.schema")),
+    Conf = [], %% conf_parse:file(tp("riak.conf")),
     NewConfig = cuttlefish_generator:map(Schema, Conf),
 
     file:write_file("../generated.config",io_lib:fwrite("~p.\n",[NewConfig])),
     ok.
 
 breaks_on_fuzzy_and_strict_match_test() ->
-    Schema = cuttlefish_schema:file("../test/riak.schema"),
+    Schema = cuttlefish_schema:file(tp("riak.schema")),
     Conf = [{["listener", "protobuf", "$name"], "127.0.0.1:8087"}],
     ?assertMatch({error, add_defaults, _}, cuttlefish_generator:map(Schema, Conf)),
     ok.
 
 breaks_on_rhs_not_found_test() ->
-    Schema = cuttlefish_schema:file("../test/riak.schema"),
+    Schema = cuttlefish_schema:file(tp("riak.schema")),
     Conf = [{["ring", "state_dir"], "$(tyktorp)/ring"}],
     ?assertMatch({error, rhs_subs, _}, cuttlefish_generator:map(Schema, Conf)),
     ok.
 
 breaks_on_rhs_infinite_loop_test() ->
-    Schema = cuttlefish_schema:file("../test/riak.schema"),
+    Schema = cuttlefish_schema:file(tp("riak.schema")),
     Conf = [
             {["ring", "state_dir"], "$(platform_data_dir)/ring"},
             {["platform_data_dir"], "$(ring.state_dir)/data"}
@@ -44,27 +44,27 @@ breaks_on_rhs_infinite_loop_test() ->
     ok.
 
 breaks_on_bad_enum_test() ->
-    Schema = cuttlefish_schema:file("../test/riak.schema"),
+    Schema = cuttlefish_schema:file(tp("riak.schema")),
     Conf = [{["storage_backend"], penguin}],
     ?assertMatch({error, transform_datatypes, _}, cuttlefish_generator:map(Schema, Conf)),
     ok.
 
 breaks_on_bad_validation_test() ->
-    Schema = cuttlefish_schema:file("../test/riak.schema"),
+    Schema = cuttlefish_schema:file(tp("riak.schema")),
     Conf = [{["ring_size"], 10}],
     ?assertMatch({error, validation, _}, cuttlefish_generator:map(Schema, Conf)),
     ok.
 
 %% Tests that the schema can generate a default app.config from nothing
 all_the_marbles_test() ->
-    Schema = cuttlefish_schema:file("../test/riak.schema"),
-    Conf = [], %conf_parse:file("../test/riak.conf"),
+    Schema = cuttlefish_schema:file(tp("riak.schema")),
+    Conf = [], %conf_parse:file(tp("riak.conf")),
     NewConfig = cuttlefish_generator:map(Schema, Conf),
     ?assert(is_proplist(NewConfig)),
 
     NewConfigWithoutVmargs = proplists:delete(vm_args, NewConfig),
 
-    {ok, [AppConfig]} = file:consult("../test/default.config"),
+    {ok, [AppConfig]} = file:consult(tp("default.config")),
 
     ?assert(is_proplist(AppConfig)),
 
@@ -72,7 +72,7 @@ all_the_marbles_test() ->
     ok.
 
 multibackend_test() ->
-    Schema = cuttlefish_schema:files(["../test/riak.schema", "../test/multi_backend.schema"]),
+    Schema = cuttlefish_schema:files([tp("riak.schema"), tp("multi_backend.schema")]),
 
     Conf = [
         {["storage_backend"], "multi"},
@@ -142,7 +142,7 @@ multibackend_test() ->
     ok.
 
 unset_translation_test() ->
-    Schema = cuttlefish_schema:files(["../test/unset_translation.schema"]),
+    Schema = cuttlefish_schema:files([tp("unset_translation.schema")]),
     Conf = [
         {["a", "b"], "8"}
     ],
@@ -152,13 +152,13 @@ unset_translation_test() ->
     ?assertEqual(8, proplists:get_value(key, Props)).
 
 not_found_error_test() ->
-    Schema = cuttlefish_schema:files(["../test/throw_not_found.schema"]),
+    Schema = cuttlefish_schema:files([tp("throw_not_found.schema")]),
     Conf = [],
     NewConfig = cuttlefish_generator:map(Schema, Conf),
     ?assertMatch({error, apply_translations, _}, NewConfig).
 
 duration_test() ->
-    Schema = cuttlefish_schema:files(["../test/durations.schema"]),
+    Schema = cuttlefish_schema:files([tp("durations.schema")]),
 
     %% Test that the duration parsing doesn't emit "error" into the
     %% config instead of the extended type.
@@ -196,3 +196,9 @@ is_proplist(Proplist) when is_list(Proplist) ->
         end,
         Proplist);
 is_proplist(_) -> false.
+
+%% test-path
+tp(Name) ->
+    filename:join([code:lib_dir(cuttlefish), "test", Name]).
+
+
