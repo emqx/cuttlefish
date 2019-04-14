@@ -722,9 +722,9 @@ add_defaults_test() ->
     ok.
 
 map_test() ->
-    Schema = cuttlefish_schema:file("../test/riak.schema"),
+    Schema = cuttlefish_schema:file(tp("riak.schema")),
 
-    Conf = conf_parse:file("../test/riak.conf"),
+    Conf = conf_parse:file(tp("riak.conf")),
 
     NewConfig = map(Schema, Conf),
 
@@ -748,7 +748,7 @@ map_test() ->
     ok.
 
 minimal_map_test() ->
-    Schema = cuttlefish_schema:file("../test/riak.schema"),
+    Schema = cuttlefish_schema:file(tp("riak.schema")),
     Conf = [{["ring_size"], "32"},
             {["anti_entropy"], "debug"}],
     NewConfig = minimal_map(Schema, Conf),
@@ -1213,5 +1213,9 @@ value_sub_paren_test() ->
     ?assertEqual([], Errors),
     ?assertEqual("C)/C)", proplists:get_value(["a"], NewConf)),
     ok.
+
+%% test-path
+tp(Name) ->
+    filename:join([code:lib_dir(cuttlefish), "test", Name]).
 
 -endif.

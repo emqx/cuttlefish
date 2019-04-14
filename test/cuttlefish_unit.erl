@@ -190,8 +190,13 @@ multiple_schema_generate_templated_config_test() ->
                                 ]})
                         ], []},
 
-    Config = cuttlefish_unit:generate_templated_config("../test/sample_mustache.schema", [], Context, PrereqSchema),
+    Config = cuttlefish_unit:generate_templated_config(tp("sample_mustache.schema"), [], Context, PrereqSchema),
     ?logger:error("~p", [Config]),
     assert_config(Config, "app_a.setting_b", "/c/mustache/a.b"),
     ok.
+
+%% test-path
+tp(Name) ->
+    filename:join([code:lib_dir(cuttlefish), "test", Name]).
+
 

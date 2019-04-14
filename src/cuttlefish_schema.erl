@@ -324,13 +324,13 @@ comment_parser_test() ->
 
 bad_file_test() ->
     cuttlefish_test_logger:bounce(),
-    {errorlist, ErrorList} = file("../test/bad_erlang.schema"),
+    {errorlist, ErrorList} = file(tp("bad_erlang.schema")),
 
     Logs = cuttlefish_test_logger:get_logs(),
     [L1|Tail] = Logs,
     [L2|[]] = Tail,
     ?assertMatch({match, _}, re:run(L1, "Error scanning erlang near line 10")),
-    ?assertMatch({match, _}, re:run(L2, "Error parsing schema: ../test/bad_erlang.schema")),
+    ?assertMatch({match, _}, re:run(L2, "Error parsing schema: .*bad_erlang.schema")),
 
     ?assertEqual([
         {error, {erl_scan, 10}}
@@ -376,9 +376,9 @@ files_test() ->
     %% Loads them in reverse order, as things are overridden
     {Translations, Mappings, Validators} = files(
         [
-            "../test/multi1.schema",
-            "../test/multi2.schema",
-            "../test/multi3.schema"
+            tp("multi1.schema"),
+            tp("multi2.schema"),
+            tp("multi3.schema")
         ]),
 
     ?assertEqual(6, length(Mappings)),
@@ -503,5 +503,9 @@ merge_across_multiple_schemas_test() ->
     ?assertEqual(on, cuttlefish_mapping:default(Mapping)),
     ?assertEqual(["hi"], cuttlefish_mapping:doc(Mapping)),
     ok.
+
+%% test-path
+tp(Name) ->
+    filename:join([code:lib_dir(cuttlefish), "test", Name]).
 
 -endif.
