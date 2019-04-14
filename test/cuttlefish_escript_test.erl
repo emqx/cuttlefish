@@ -94,7 +94,8 @@ describe_prints_no_default() ->
 describe_prints_not_configured() ->
     ?capturing(begin
                    describe("ssl.keyfile"),
-                   ?assertPrinted("Value not set in \\.\\./test/riak.conf")
+                   Text = "Value not set in " ++ tp("riak.conf"),
+                   ?assertPrinted(Text)
                end).
 
 %% test-path
