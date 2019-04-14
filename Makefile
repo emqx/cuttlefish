@@ -17,8 +17,11 @@ docsclean:
 compile: deps
 	$(REBAR) compile
 
+escript:
+	$(REBAR) as escript escriptize
+
 clean:
-	@rm -rf _build rebar.lock
+	@rm -rf _build rebar.lock cuttlefish erl_crash.dump rebar3.crashdump
 
 eunit: compile
 	$(REBAR) eunit verbose=true
