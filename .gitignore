@@ -12,6 +12,6 @@ log
 .local_dialyzer_plt
 src/cuttlefish_duration_parse.erl
 erln8.config
-test_fixtures/escript_prune_test/generated.config/*
+test/fixtures/escript_prune_test/generated.config/
 _build/
 rebar.lock

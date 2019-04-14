@@ -17,24 +17,11 @@ generate_templated_config(FileName, Conf, Context, PreexistingSchema) ->
     Schema = cuttlefish_schema:merger(RenderedSchemas ++ [ { fun(_, _) -> PreexistingSchema end, ""} ]),
     cuttlefish_generator:map(Schema, Conf).
 
-render_template(FileName, Context) ->
+render_template(FileName, Context0) ->
+    Context = make_bbmustache_data(Context0),
     {ok, Bin} = file:read_file(FileName),
-    %% Stolen from rebar_templater:render/2
-    %% Be sure to escape any double-quotes before rendering...
-    ReOpts = [global, {return, list}],
-    Str0 = re:replace(Bin, "\\\\", "\\\\\\", ReOpts),
-    Str1 = re:replace(Str0, "\"", "\\\\\"", ReOpts),
-
-    %% the mustache module is only available in the context of a rebar run.
-    case {code:ensure_loaded(mustache), code:ensure_loaded(rebar_mustache)} of
-        {{module, mustache}, _} ->
-            mustache:render(Str1, dict:from_list(Context));
-        {_, {module, rebar_mustache}} ->
-            rebar_mustache:render(Str1, dict:from_list(Context));
-        _ ->
-            io:format("mustache and/or rebar_mustache module not loaded. "
-                      "This test can only be run in a rebar context.~n")
-    end.
+    Rendered = bbmustache:render(Bin, Context),
+    unicode:characters_to_list(Rendered).
 
 -spec generate_config(atom(), [string()]|string(), list()) -> list().
 generate_config(strings, SchemaStrings, Conf) ->
@@ -199,4 +186,14 @@ multiple_schema_generate_templated_config_test() ->
 tp(Name) ->
     filename:join([code:lib_dir(cuttlefish), "test", Name]).
 
+make_bbmustache_data(L) -> lists:map(fun make_bbmustache_data_opt/1, L).
+
+make_bbmustache_data_opt({K, V}) ->
+    {make_bbmustache_data_opt_key(K), make_bbmustache_data_opt_val(V)}.
+
+make_bbmustache_data_opt_key(K) when is_atom(K) -> atom_to_list(K);
+make_bbmustache_data_opt_key(K) when is_binary(K) -> binary_to_list(K);
+make_bbmustache_data_opt_key(K) when is_list(K) -> K.
+
+make_bbmustache_data_opt_val(V) -> iolist_to_binary(V).
 
