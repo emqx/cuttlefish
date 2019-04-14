@@ -51,7 +51,7 @@ describe_test_() ->
      ].
 
 describe(Key) ->
-    ?assertThrow(stop_deactivate, cuttlefish_escript:main(["-i", "../test/riak.schema", "-c", "../test/riak.conf", "describe", Key])).
+    ?assertThrow(stop_deactivate, cuttlefish_escript:main(["-i", tp("riak.schema"), "-c", tp("riak.conf"), "describe", Key])).
 
 describe_prints_docs() ->
     ?capturing(begin
@@ -96,5 +96,9 @@ describe_prints_not_configured() ->
                    describe("ssl.keyfile"),
                    ?assertPrinted("Value not set in \\.\\./test/riak.conf")
                end).
+
+%% test-path
+tp(Name) ->
+    filename:join([code:lib_dir(cuttlefish), "test", Name]).
 
 -endif.
