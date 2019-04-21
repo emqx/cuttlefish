@@ -14,7 +14,6 @@ src/cuttlefish_duration_parse.erl
 erln8.config
 test/fixtures/escript_prune_test/generated.config/
 _build/
-rebar.lock
 .rebar3/
 erl_crash.dump
 rebar3.crashdump

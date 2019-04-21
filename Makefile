@@ -21,7 +21,7 @@ escript:
 	$(REBAR) as escript escriptize
 
 clean:
-	@rm -rf _build rebar.lock cuttlefish erl_crash.dump rebar3.crashdump
+	@rm -rf _build cuttlefish erl_crash.dump rebar3.crashdump
 
 eunit: compile
 	$(REBAR) eunit verbose=true
