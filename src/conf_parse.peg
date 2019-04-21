@@ -133,7 +133,7 @@ ws <- [ \t] `ws`;
 -compile(export_all).
 -endif.
 
-%% @doc Only let through lines that are not comments or whitespace.
+%% @doc Only let through lines that are not comments, whitespace or placeholder.
 is_setting(ws) -> false;
 is_setting(comment) -> false;
 is_setting(placeholder) -> false;
