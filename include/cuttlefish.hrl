@@ -1,10 +1,5 @@
--ifndef(CUTTLEFISH_HRL).
--define(CUTTLEFISH_HRL, ture).
-
--ifdef(EUNIT).
+-ifdef(TEST).
 -define(logger, cuttlefish_test_logger).
 -else.
 -define(logger, logger).
--endif.
-
 -endif.
