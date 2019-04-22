@@ -1,17 +1,9 @@
-BuildDir = os:getenv("REBAR_BUILD_DIR"),
-Profile = "escript",
-IsBuildingEscript =
-    case is_list(BuildDir) of
-        true ->
-            Idx = string:str(BuildDir, Profile),
-            Idx > 0 andalso Idx + length(Profile) - 1 =:= length(BuildDir);
-        false ->
-            false
-    end,
-case IsBuildingEscript of
+case os:getenv("CUTTLEFISH_ESCRIPT") =:= "true" of
     true ->
         %% building escript, delete the post hook
-        lists:keydelete(post_hooks, 1, CONFIG);
+        {_, PostHooks0} = lists:keyfind(post_hooks, 1, CONFIG),
+        PostHooks = lists:keydelete(app_compile, 1, PostHooks0),
+        lists:keystore(post_hooks, 1, CONFIG, {post_hooks, PostHooks});
     false ->
         CONFIG
 end.
