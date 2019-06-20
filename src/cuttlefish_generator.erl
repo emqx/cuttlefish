@@ -231,10 +231,8 @@ prepare_translation_fun(Conf, Schema, Mapping, Xlat) ->
                 lists:any(fun(I) -> cuttlefish_variable:is_fuzzy_match(Key, I) end, Mappings0)
             end, Conf),
             {Xlat, [Conf1, Schema, Conf]};
-        OtherArity ->
-            {fun(_) ->
-                     {error, {translation_arity, {Mapping, OtherArity}}}
-             end, error}
+        _OtherArity ->
+            {fun() -> cuttlefish:invalid("translation fun can only have 1-3 arties") end, []}
     end.
 
 try_apply_translation(Mapping, XlatFun, XlatArgs) ->
