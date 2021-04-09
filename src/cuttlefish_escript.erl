@@ -260,10 +260,13 @@ find_results(QueryVar, Mappings) ->
 
 -ifndef(TEST).
 stop_deactivate() ->
-    erlang:halt(1).
+    init:stop(1),
+    %% wait for logger to print all errors
+    timer:sleep(100),
+    stop_deactivate().
 
 stop_ok() ->
-    erlang:halt(0).
+    init:stop(0).
 -endif.
 
 -ifdef(TEST).
