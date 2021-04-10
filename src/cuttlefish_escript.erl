@@ -103,7 +103,7 @@ main(Args) ->
         describe ->
             describe(ParsedArgs, Extra);
         get ->
-            get(ParsedArgs, Extra);
+            describe(ParsedArgs, Extra, get);
         _Other ->
             print_help()
     end.
@@ -164,99 +164,89 @@ describe(_ParsedArgs, []) ->
     ?STDOUT("cuttlefish's describe command required a variable to query.", []),
     ?STDOUT("Try `describe setting.name`", []),
     stop_deactivate();
-describe(ParsedArgs, [Query|_]) when is_list(Query) ->
+describe(ParsedArgs, Extra) ->
+    describe(ParsedArgs, Extra, describe).
+
+describe(ParsedArgs, [Query|_], Cmd) when is_list(Query) ->
+    QDef = cuttlefish_variable:tokenize(Query),
+
     ?logger:debug("cuttlefish describe '~s'", [Query]),
     {_, Mappings, _} = load_schema(ParsedArgs),
 
-    case match(ParsedArgs, Query) of
-        {error, notfound}->
-            ?STDOUT("Variable '~s' not found", [Query]);
-        {ok, Match} ->
-            ?STDOUT("Documentation for ~s", [cuttlefish_variable:format(cuttlefish_mapping:variable(Match))]),
-            _ = case {cuttlefish_mapping:doc(Match), cuttlefish_mapping:see(Match)} of
-                {[], []} ->
-                    ok;
-                {[], See} ->
-                    _ = [ begin
-                          M = hd(find_results(S, Mappings)),
-                          [ ?STDOUT("~s", [Line]) || Line <- cuttlefish_mapping:doc(M)]
-                    end || S <- See],
-                    ok;
-                {Docs, []} ->
-                    [ ?STDOUT("~s", [Line]) || Line <- Docs];
-                {Docs, See} ->
-                    _ = [ ?STDOUT("~s", [Line]) || Line <- Docs],
-                    ?STDOUT("See also:", []),
-                    [?STDOUT("    ~s", [cuttlefish_variable:format(S)]) || S <- See]
+    FindResults = fun(QueryVar) ->
+        lists:filter(
+            fun(X) ->
+                cuttlefish_variable:is_fuzzy_match(QueryVar, cuttlefish_mapping:variable(X))
             end,
-            ?STDOUT("", []),
-            ValidValues = [
-                            ?FORMAT("~n     - ~s", [cuttlefish_conf:pretty_datatype(Type)]) ||
-                              Type <- lists:flatten([cuttlefish_mapping:datatype(Match)]) ],
-            ?STDOUT("   Valid Values: ~s", [ValidValues]),
-            case cuttlefish_mapping:has_default(Match) of
-                true ->
-                    ?STDOUT("   Default Value : ~s",
-                            [format_datatype(cuttlefish_mapping:default(Match),
-                                             cuttlefish_mapping:datatype(Match))]);
-                false ->
-                    ?STDOUT("   No default set", [])
-            end,
-            Conf = load_conf(ParsedArgs),
-            case lists:keyfind(cuttlefish_variable:tokenize(Query), 1, Conf) of
-                false ->
-                    ConfFile = proplists:get_value(conf_file, ParsedArgs),
-                    ?STDOUT("   Value not set in ~s", [ConfFile]);
-                {_, CValue} ->
-                    ConfiguredValue = format_datatype(CValue, cuttlefish_mapping:datatype(Match)),
-                    ?STDOUT("   Set Value     : ~s", [ConfiguredValue])
-            end,
-            ?STDOUT("   Internal key  : ~s", [cuttlefish_mapping:mapping(Match)])
-    end,
-    stop_deactivate().
+            Mappings)
+                  end,
 
-%% This is the function that dumps the value for a single setting.
-%% To be shell friendly, it returns nothing when something is wrong.
-get(_ParsedArgs, []) ->
-    %% No query, you get nothing.
-    ?logger:debug("cuttlefish's get command required a variable to query.", []),
-    ?logger:debug("Try `get setting.name`", []),
-    stop_deactivate();
-get(ParsedArgs, [Query|_]) when is_list(Query) ->
-    ?logger:debug("cuttlefish get '~s'", [Query]),
-    case match(ParsedArgs, Query) of
-        {error, notfound} ->
-            ?logger:debug("Variable '~s' not found", [Query]),
+    case FindResults(QDef) of
+        [] ->
+            Msg = ?FORMAT("Variable '~s' not found", [Query]),
+            case Cmd of
+                get ->
+                    ?logger:debug("~s", [Msg]);
+                describe ->
+                    ?STDOUT("~s", [Msg])
+            end,
             stop_deactivate();
-        {ok, Match} ->
+        [Match|_] ->
+            _ = case Cmd of
+                    get ->
+                        ok;
+                    describe ->
+                        describe_doc(Match, FindResults),
+                        ?STDOUT("", []),
+                        describe_default(Match)
+            end,
             Conf = load_conf(ParsedArgs),
-            case lists:keyfind(cuttlefish_variable:tokenize(Query), 1, Conf) of
-                false ->
-                    ConfFile = proplists:get_value(conf_file, ParsedArgs),
+            ConfFile = proplists:get_value(conf_file, ParsedArgs),
+            case {lists:keyfind(cuttlefish_variable:tokenize(Query), 1, Conf), Cmd} of
+                {false, get} ->
                     ?logger:debug("Value not set in ~s", [ConfFile]),
                     stop_deactivate();
-                {_, CValue} ->
-                    ConfiguredValue = format_datatype(CValue, cuttlefish_mapping:datatype(Match)),
-                    ?STDOUT("~s", [ConfiguredValue])
+                {{_, V}, get} ->
+                    ?STDOUT("~s", [format_datatype(V, cuttlefish_mapping:datatype(Match))]);
+                {false, describe} ->
+                    ?STDOUT("   Value not set in ~s", [ConfFile]),
+                    ?STDOUT("   Internal key  : ~s", [cuttlefish_mapping:mapping(Match)]);
+                {{_, V}, describe} ->
+                    ?STDOUT("   Set Value     : ~s", [format_datatype(V, cuttlefish_mapping:datatype(Match))]),
+                    ?STDOUT("   Internal key  : ~s", [cuttlefish_mapping:mapping(Match)])
             end
     end,
     stop_ok().
 
-match(ParsedArgs, Query) ->
-    {_, Mappings, _} = load_schema(ParsedArgs),
-    case find_results(cuttlefish_variable:tokenize(Query), Mappings) of
-        [] ->
-            {error, notfound};
-        [Match|_] ->
-            {ok, Match}
-    end.
+describe_doc(Match, FindResults) ->
+    ?STDOUT("Documentation for ~s", [cuttlefish_variable:format(cuttlefish_mapping:variable(Match))]),
+    _ = case {cuttlefish_mapping:doc(Match), cuttlefish_mapping:see(Match)} of
+            {[], []} ->
+                ok;
+            {[], See} ->
+                _ = [ begin M = hd(FindResults(S)),
+                [ ?STDOUT("~s", [Line]) || Line <- cuttlefish_mapping:doc(M)] end || S <- See];
+            {Docs, []} ->
+                [ ?STDOUT("~s", [Line]) || Line <- Docs];
+            {Docs, See} ->
+                _ = [ ?STDOUT("~s", [Line]) || Line <- Docs],
+                ?STDOUT("See also:", []),
+                [?STDOUT("    ~s", [cuttlefish_variable:format(S)]) || S <- See]
+        end.
 
-find_results(QueryVar, Mappings) ->
-    lists:filter(
-        fun(X) ->
-            cuttlefish_variable:is_fuzzy_match(QueryVar, cuttlefish_mapping:variable(X))
-        end,
-        Mappings).
+describe_default(Match) ->
+    ValidValues = [
+        ?FORMAT("~n     - ~s", [cuttlefish_conf:pretty_datatype(Type)]) ||
+        Type <- lists:flatten([cuttlefish_mapping:datatype(Match)]) ],
+    ?STDOUT("   Valid Values: ~s", [ValidValues]),
+    case cuttlefish_mapping:has_default(Match) of
+        true ->
+            ?STDOUT("   Default Value : ~s",
+                [format_datatype(cuttlefish_mapping:default(Match),
+                    cuttlefish_mapping:datatype(Match))]);
+        false ->
+            ?STDOUT("   No default set", [])
+    end.
 
 -ifndef(TEST).
 stop_deactivate() ->
