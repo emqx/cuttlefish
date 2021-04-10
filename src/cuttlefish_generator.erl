@@ -33,7 +33,7 @@
 -define(LSUBLEN, 2).
 -define(RSUBLEN, 1).
 
--export([map/2, map/3, map/4, find_mapping/2, add_defaults/2, minimal_map/2]).
+-export([map/2, map/3, map/4, merge_env_conf/3, find_mapping/2, add_defaults/2, minimal_map/2]).
 
 -include("cuttlefish.hrl").
 

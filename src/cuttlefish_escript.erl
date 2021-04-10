@@ -171,7 +171,7 @@ describe(ParsedArgs, [Query|_], Cmd) when is_list(Query) ->
     QDef = cuttlefish_variable:tokenize(Query),
 
     ?logger:debug("cuttlefish describe '~s'", [Query]),
-    {_, Mappings, _} = load_schema(ParsedArgs),
+    {_, Mappings, _} = Schema = load_schema(ParsedArgs),
 
     FindResults = fun(QueryVar) ->
         lists:filter(
@@ -200,7 +200,7 @@ describe(ParsedArgs, [Query|_], Cmd) when is_list(Query) ->
                         ?STDOUT("", []),
                         describe_default(Match)
             end,
-            Conf = load_conf(ParsedArgs),
+            Conf = cuttlefish_generator:merge_env_conf(load_conf(ParsedArgs), Schema, fun (_, _) -> ok end),
             ConfFile = proplists:get_value(conf_file, ParsedArgs),
             case {lists:keyfind(cuttlefish_variable:tokenize(Query), 1, Conf), Cmd} of
                 {false, get} ->

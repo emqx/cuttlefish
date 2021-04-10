@@ -120,7 +120,8 @@ describe_prints_not_configured() ->
 get_test_() ->
   [
     {"`cuttlefish get` prints value", fun get_prints/0},
-    {"`cuttlefish get` prints datatype's valid values", fun get_prints_nothing/0}
+    {"`cuttlefish get` prints value from env var", fun get_prints_env/0},
+    {"`cuttlefish get` prints nothing for non-existing key", fun get_prints_nothing/0}
   ].
 
 get_(Key) ->
@@ -137,6 +138,17 @@ get_prints() ->
                {ok, Stdout} = cuttlefish_test_group_leader:get_output(),
                ?assertEqual([["127.0.0.1:8098", $\n]], Stdout)
              end).
+
+get_prints_env() ->
+    os:putenv("CUTTLEFISH_ENV_OVERRIDE_PREFIX", "EMQX_"),
+    os:putenv("EMQX_RING_SIZE", "16"),
+    ?capturing(begin
+                   get_("ring_size"),
+                   {ok, Stdout} = cuttlefish_test_group_leader:get_output(),
+                   ?assertEqual([["16", $\n]], Stdout)
+               end),
+    os:unsetenv("CUTTLEFISH_ENV_OVERRIDE_PREFIX"),
+    os:unsetenv("EMQX_RING_SIZE").
 
 get_prints_nothing() ->
   ?capturing(begin
