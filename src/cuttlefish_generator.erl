@@ -1355,17 +1355,18 @@ env_override_test() ->
 
     os:putenv("CUTTLEFISH_ENV_OVERRIDE_PREFIX", "EMQX_"),
 
-    NewConfig = map({Translations, Mappings, []}, Conf),
-
-    os:unsetenv("EMQX_SOME__KEY"),
-    os:unsetenv("EMQX_OTHER__KEY"),
-    os:unsetenv("OVERRIDE_IT"),
-    os:unsetenv("EMQX_FUZZY__KEY__1"),
-    os:unsetenv("CUTTLEFISH_ENV_OVERRIDE_PREFIX"),
-
-    ?assertEqual("foo_override", proplists:get_value(somekey, NewConfig)),
-    ?assertEqual("bar_override", proplists:get_value(otherkey, NewConfig)),
-    ?assertEqual("baz_override", proplists:get_value(fuzzykey, NewConfig)),
+    try
+        NewConfig = map({Translations, Mappings, []}, Conf),
+        ?assertEqual("foo_override", proplists:get_value(somekey, NewConfig)),
+        ?assertEqual("bar_override", proplists:get_value(otherkey, NewConfig)),
+        ?assertEqual("baz_override", proplists:get_value(fuzzykey, NewConfig))
+    after
+        os:unsetenv("EMQX_SOME__KEY"),
+        os:unsetenv("EMQX_OTHER__KEY"),
+        os:unsetenv("OVERRIDE_IT"),
+        os:unsetenv("EMQX_FUZZY__KEY__1"),
+        os:unsetenv("CUTTLEFISH_ENV_OVERRIDE_PREFIX")
+    end,
     ok.
 
 env_fuzzy_override_error_test() ->
@@ -1382,10 +1383,12 @@ env_fuzzy_override_error_test() ->
     os:putenv("EMQX_OVERRIDE", "foo"),
     os:putenv("CUTTLEFISH_ENV_OVERRIDE_PREFIX", "EMQX_"),
 
-    ?assertError({no_env_override_support_for_fuzzy_mappings, _}, map({[], Mappings, []}, Conf)),
-
-    os:unsetenv("EMQX_OVERRIDE"),
-    os:unsetenv("CUTTLEFISH_ENV_OVERRIDE_PREFIX"),
+    try
+        ?assertError({no_env_override_support_for_fuzzy_mappings, _}, map({[], Mappings, []}, Conf))
+    after
+        os:unsetenv("EMQX_OVERRIDE"),
+        os:unsetenv("CUTTLEFISH_ENV_OVERRIDE_PREFIX")
+    end,
     ok.
 
 %% test-path

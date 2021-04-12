@@ -142,13 +142,16 @@ get_prints() ->
 get_prints_env() ->
     os:putenv("CUTTLEFISH_ENV_OVERRIDE_PREFIX", "EMQX_"),
     os:putenv("EMQX_RING_SIZE", "16"),
-    ?capturing(begin
-                   get_("ring_size"),
-                   {ok, Stdout} = cuttlefish_test_group_leader:get_output(),
-                   ?assertEqual([["16", $\n]], Stdout)
-               end),
-    os:unsetenv("CUTTLEFISH_ENV_OVERRIDE_PREFIX"),
-    os:unsetenv("EMQX_RING_SIZE").
+    try
+        ?capturing(begin
+                       get_("ring_size"),
+                       {ok, Stdout} = cuttlefish_test_group_leader:get_output(),
+                       ?assertEqual([["16", $\n]], Stdout)
+                   end)
+    after
+        os:unsetenv("CUTTLEFISH_ENV_OVERRIDE_PREFIX"),
+        os:unsetenv("EMQX_RING_SIZE")
+    end.
 
 get_prints_nothing() ->
   ?capturing(begin

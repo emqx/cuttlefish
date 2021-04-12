@@ -17,5 +17,5 @@ _build/
 .rebar3/
 erl_crash.dump
 rebar3.crashdump
-reabr.lock
+rebar.lock
 /.idea/
