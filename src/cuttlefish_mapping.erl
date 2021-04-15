@@ -50,6 +50,7 @@
 -export([
     parse/1,
     parse_and_merge/2,
+    to_map/1,
     is_mapping/1,
     variable/1,
     is_fuzzy_variable/1,
@@ -172,6 +173,22 @@ choose(Field, {_, _, _, PreParseMergeProps}, MergeMapping, OldMapping) ->
         old ->
             ?MODULE:Field(OldMapping)
     end.
+
+-spec to_map(mapping()) -> map().
+to_map(M) ->
+    #{variable => M#mapping.variable,
+      mapping => M#mapping.mapping,
+      default => M#mapping.default,
+      commented => M#mapping.commented,
+      datatype => M#mapping.datatype,
+      level => M#mapping.level,
+      doc => M#mapping.doc,
+      include_default => M#mapping.include_default,
+      new_conf_value => M#mapping.new_conf_value,
+      validators => M#mapping.validators,
+      see => M#mapping.see,
+      hidden => M#mapping.hidden,
+      override_env => M#mapping.override_env}.
 
 -spec is_mapping(any()) -> boolean().
 is_mapping(M) ->

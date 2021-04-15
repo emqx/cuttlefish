@@ -30,6 +30,7 @@
 -export([
     conf_get/2,
     conf_get/3,
+    conf_get_with/3,
     unset/0,
     invalid/1,
     otp/2,
@@ -110,6 +111,16 @@ conf_get([H|_T]=Variable, ConfigProplist, Default) when is_list(H) ->
 conf_get(Variable, ConfigProplist, Default) ->
     conf_get(cuttlefish_variable:tokenize(Variable), ConfigProplist, Default).
 
+conf_get_with([H|_T]=Variable, ConfLookupFun, Default) when is_list(H) ->
+    case ConfLookupFun(Variable) of
+        undefined ->
+            Default;
+        V ->
+            V
+    end;
+conf_get_with(Variable, ConfLookupFun, Default) ->
+    conf_get_with(cuttlefish_variable:tokenize(Variable), ConfLookupFun, Default).
+
 %% @doc When called inside a translation, tells cuttlefish to omit the
 %% Erlang setting from the generated configuration.
 -spec unset() -> no_return().
@@ -146,6 +157,42 @@ otp_test() ->
     ?assert(not(otp("17", "R16"))),
     ?assert(otp("R16A", "17")),
     ?assert(not(otp("18", "17"))),
+    ok.
+
+conf_get_with_test() ->
+    Conf = [
+        {["a", "b"], "some_value"}
+    ],
+
+    Mappings = [
+        cuttlefish_mapping:parse({mapping, "a.b", "internalkey", [
+            {datatype, string}
+        ]})
+    ],
+    MappingsWithOverride = [
+        cuttlefish_mapping:parse({mapping, "a.b", "internalkey", [
+            {datatype, string},
+            {override_env, "OVERRIDE"}
+        ]})
+    ],
+    os:putenv("EMQX_A__B", "env_value"),
+    os:putenv("EMQX_OVERRIDE", "override_value"),
+    os:putenv("CUTTLEFISH_ENV_OVERRIDE_PREFIX", "EMQX_"),
+
+    ConfWithEnv = cuttlefish_generator:merge_env_conf(Conf, {[], Mappings, []}),
+    ConfWithOverrideEnv = cuttlefish_generator:merge_env_conf(Conf, {[], MappingsWithOverride, []}),
+    F = fun (Variable) -> proplists:get_value(Variable, ConfWithEnv, undefined) end,
+    G = fun (Variable) -> proplists:get_value(Variable, ConfWithOverrideEnv, undefined) end,
+
+    try
+        ?assertEqual("env_value", conf_get_with("a.b", F, undefined)),
+        ?assertEqual("env_value", conf_get_with(["a", "b"], F, undefined)),
+        ?assertEqual("override_value", conf_get_with(["a", "b"], G, undefined))
+    after
+        os:unsetenv("EMQX_A__B"),
+        os:unsetenv("EMQX_OVERRIDE"),
+        os:unsetenv("CUTTLEFISH_ENV_OVERRIDE_PREFIX")
+    end,
     ok.
 
 -endif.

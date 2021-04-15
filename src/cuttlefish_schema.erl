@@ -22,7 +22,7 @@
 
 -module(cuttlefish_schema).
 
--export([files/1, strings/1]).
+-export([files/1, strings/1, match/2]).
 
 %% Exported for unit testing in other projects
 -export([merger/1, string_fun_factory/0]).
@@ -47,6 +47,18 @@ files(ListOfSchemaFiles) ->
 -spec strings([string()]) -> schema() | cuttlefish_error:errorlist().
 strings(ListOfStrings) ->
     merger(fun string/2, ListOfStrings).
+
+match([H|_T]=Variable, Mappings) when is_list(H) ->
+        lists:filtermap(
+            fun(X) ->
+                case cuttlefish_variable:is_fuzzy_match(Variable, cuttlefish_mapping:variable(X)) of
+                    false -> false;
+                    true -> {true, cuttlefish_mapping:to_map(X)}
+                end
+            end,
+            Mappings);
+match(Variable, Mappings) ->
+    match(cuttlefish_variable:tokenize(Variable), Mappings).
 
 -spec merger(fun((string(), schema()) -> schema() | cuttlefish_error:errorlist()), [string()]) ->
                     schema() | cuttlefish_error:errorlist().
@@ -502,6 +514,16 @@ merge_across_multiple_schemas_test() ->
     ?assertEqual([flag], cuttlefish_mapping:datatype(Mapping)),
     ?assertEqual(on, cuttlefish_mapping:default(Mapping)),
     ?assertEqual(["hi"], cuttlefish_mapping:doc(Mapping)),
+    ok.
+
+match_test() ->
+    StringSchema = "{mapping, \"a.b\", \"erlang.key1\", []}.\n" ++
+                   "{mapping, \"a.$name.x\", \"erlang.key3\", []}.",
+    {_, Mappings, _} = strings([StringSchema]),
+    ?assertEqual(2, length(Mappings)),
+    ?assertMatch(#{variable := ["a", "b"]}, hd(cuttlefish_schema:match("a.b", Mappings))),
+    ?assertMatch(#{variable := ["a", "b"]}, hd(cuttlefish_schema:match(["a", "b"], Mappings))),
+    ?assertMatch(#{variable := ["a", "$name", "x"]}, hd(cuttlefish_schema:match("a.1.x", Mappings))),
     ok.
 
 %% test-path

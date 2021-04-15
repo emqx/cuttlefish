@@ -33,7 +33,7 @@
 -define(LSUBLEN, 2).
 -define(RSUBLEN, 1).
 
--export([map/2, map/3, map/4, merge_env_conf/3, find_mapping/2, add_defaults/2, minimal_map/2]).
+-export([map/2, map/3, map/4, merge_env_conf/2, merge_env_conf/3, find_mapping/2, add_defaults/2, minimal_map/2]).
 
 -include("cuttlefish.hrl").
 
@@ -51,6 +51,9 @@ map(Schema, Config, ConfFile, LogFun) ->
     IncludedConfig = merge_include_conf(Config -- IncludeFile, IncludeFile, ConfFile),
     AllConfig = merge_env_conf(IncludedConfig, Schema, LogFun),
     map_add_defaults(Schema, AllConfig).
+
+merge_env_conf(Config, Schema) ->
+    merge_env_conf(Config, Schema, fun (_, _) -> ok end).
 
 -spec (merge_env_conf(cuttlefish_conf:conf(),
                       cuttlefish_schema:schema(),
