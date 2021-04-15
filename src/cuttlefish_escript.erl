@@ -47,7 +47,8 @@ cli_options() ->
  {log_level,    $l, "log_level",   {string, "notice"}, "log level for cuttlefish output"},
  {print_schema, $p, "print",       undefined,          "prints schema mappings on stderr"},
  {max_history,  $m, "max_history", {integer, 3},       "the maximum number of generated config files to keep"},
- {verbose_env,  $v, "verbose_env", {boolean, false},   "whether to log env overrides to stdout"}
+ {verbose_env,  $v, "verbose_env", {boolean, false},   "whether to log env overrides to stdout"},
+ {title,        $t, "title",       string,             "title (with h2 tag) in markdown"}
 ].
 
 %% LOL! I wanted this to be halt 0, but honestly, if this escript does anything
@@ -104,6 +105,8 @@ main(Args) ->
             describe(ParsedArgs, Extra);
         get ->
             describe(ParsedArgs, Extra, get);
+        md ->
+            md(ParsedArgs);
         _Other ->
             print_help()
     end.
@@ -238,6 +241,11 @@ describe_default(#{datatype := Datatype, default := Default}) ->
         _ ->
             ?STDOUT("   Default Value : ~s", [format_datatype(Default, Datatype)])
     end.
+
+md(ParsedArgs) ->
+    {_, Mappings, _} = load_schema(ParsedArgs),
+    Title = cuttlefish_markdown:h2(proplists:get_value(title, ParsedArgs)),
+    ?STDOUT("~s", [Title ++ cuttlefish_markdown:md(Mappings)]).
 
 -ifndef(TEST).
 stop_deactivate() ->

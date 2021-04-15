@@ -21,7 +21,7 @@
 -compile(export_all).
 -endif.
 
--export([md/1, files/2]).
+-export([md/1, files/2, h2/1]).
 
 files(Files, Out) ->
     {_, Mappings, _} = cuttlefish_schema:files(Files),
@@ -55,6 +55,9 @@ maybe_default(M) ->
             StringifyAttempts = [cuttlefish_datatypes:to_string(V, T) || T <- cuttlefish_mapping:datatype(M)],
             hd(lists:filter(fun ({error, _}) -> false; (_) -> true end, StringifyAttempts))
     end.
+
+h2(Str) when is_list(Str) ->
+    "## " ++ Str ++ "\n".
 
 h3(Str) when is_list(Str) ->
     "### " ++ Str ++ "\n".

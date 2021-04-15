@@ -160,6 +160,24 @@ get_prints_nothing() ->
                ?assertEqual([], Stdout)
              end).
 
+md_test_() ->
+    [
+        {"`cuttlefish md` prints markdown", fun md_prints/0}
+    ].
+
+md_prints() ->
+    ?capturing(begin
+                   cuttlefish_escript:main(["-i", tp("riak.schema"), "-t", "configuration for riak", "md"]),
+                   ?assertPrinted("## configuration for riak"),
+                   ?assertPrinted("### ring_size"),
+                   ?assertPrinted("|Type|Default|"),
+                   ?assertPrinted("|---|---|"),
+                   ?assertPrinted("|integer|64|"),
+                   ?assertPrinted("#### description"),
+                   ?assertPrinted("Default ring creation size.  Make sure it is a power of 2,"),
+                   ?assertPrinted("e.g. 16, 32, 64, 128, 256, 512 etc")
+               end).
+
 %% test-path
 tp(Name) ->
     filename:join([code:lib_dir(cuttlefish), "test", Name]).
