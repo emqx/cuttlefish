@@ -173,15 +173,7 @@ describe(ParsedArgs, [Query|_], Cmd) when is_list(Query) ->
     ?logger:debug("cuttlefish describe '~s'", [Query]),
     {_, Mappings, _} = Schema = load_schema(ParsedArgs),
 
-    FindResults = fun(QueryVar) ->
-        lists:filter(
-            fun(X) ->
-                cuttlefish_variable:is_fuzzy_match(QueryVar, cuttlefish_mapping:variable(X))
-            end,
-            Mappings)
-                  end,
-
-    case FindResults(QDef) of
+    case cuttlefish_schema:match(QDef, Mappings) of
         [] ->
             Msg = ?FORMAT("Variable '~s' not found", [Query]),
             case Cmd of
@@ -196,56 +188,55 @@ describe(ParsedArgs, [Query|_], Cmd) when is_list(Query) ->
                     get ->
                         ok;
                     describe ->
-                        describe_doc(Match, FindResults),
+                        describe_doc(Match, Mappings),
                         ?STDOUT("", []),
                         describe_default(Match)
             end,
             Conf = cuttlefish_generator:merge_env_conf(load_conf(ParsedArgs), Schema, fun (_, _) -> ok end),
             ConfFile = proplists:get_value(conf_file, ParsedArgs),
-            case {lists:keyfind(cuttlefish_variable:tokenize(Query), 1, Conf), Cmd} of
-                {false, get} ->
+            F = fun (Variable) -> proplists:get_value(Variable, Conf, undefined) end,
+            case {cuttlefish:conf_get_with(Query, F, undefined), Cmd} of
+                {undefined, get} ->
                     ?logger:debug("Value not set in ~s", [ConfFile]),
                     stop_deactivate();
-                {{_, V}, get} ->
-                    ?STDOUT("~s", [format_datatype(V, cuttlefish_mapping:datatype(Match))]);
-                {false, describe} ->
+                {V, get} ->
+                    ?STDOUT("~s", [format_datatype(V, maps:get(datatype, Match))]);
+                {undefined, describe} ->
                     ?STDOUT("   Value not set in ~s", [ConfFile]),
-                    ?STDOUT("   Internal key  : ~s", [cuttlefish_mapping:mapping(Match)]);
-                {{_, V}, describe} ->
-                    ?STDOUT("   Set Value     : ~s", [format_datatype(V, cuttlefish_mapping:datatype(Match))]),
-                    ?STDOUT("   Internal key  : ~s", [cuttlefish_mapping:mapping(Match)])
+                    ?STDOUT("   Internal key  : ~s", [maps:get(mapping, Match)]);
+                {V, describe} ->
+                    ?STDOUT("   Set Value     : ~s", [format_datatype(V, maps:get(datatype, Match))]),
+                    ?STDOUT("   Internal key  : ~s", [maps:get(mapping, Match)])
             end
     end,
     stop_ok().
 
-describe_doc(Match, FindResults) ->
-    ?STDOUT("Documentation for ~s", [cuttlefish_variable:format(cuttlefish_mapping:variable(Match))]),
-    _ = case {cuttlefish_mapping:doc(Match), cuttlefish_mapping:see(Match)} of
-            {[], []} ->
+describe_doc(Match, Mappings) ->
+    ?STDOUT("Documentation for ~s", [cuttlefish_variable:format(maps:get(variable, Match))]),
+    _ = case Match of
+            #{doc := [], see := []} ->
                 ok;
-            {[], See} ->
-                _ = [ begin M = hd(FindResults(S)),
+            #{doc := [], see := See} ->
+                _ = [ begin M = hd(cuttlefish_schema:match(S, Mappings)),
                 [ ?STDOUT("~s", [Line]) || Line <- cuttlefish_mapping:doc(M)] end || S <- See];
-            {Docs, []} ->
+            #{doc := Docs, see := []} ->
                 [ ?STDOUT("~s", [Line]) || Line <- Docs];
-            {Docs, See} ->
+            #{doc := Docs, see := See} ->
                 _ = [ ?STDOUT("~s", [Line]) || Line <- Docs],
                 ?STDOUT("See also:", []),
                 [?STDOUT("    ~s", [cuttlefish_variable:format(S)]) || S <- See]
         end.
 
-describe_default(Match) ->
+describe_default(#{datatype := Datatype, default := Default}) ->
     ValidValues = [
         ?FORMAT("~n     - ~s", [cuttlefish_conf:pretty_datatype(Type)]) ||
-        Type <- lists:flatten([cuttlefish_mapping:datatype(Match)]) ],
+        Type <- lists:flatten(Datatype) ],
     ?STDOUT("   Valid Values: ~s", [ValidValues]),
-    case cuttlefish_mapping:has_default(Match) of
-        true ->
-            ?STDOUT("   Default Value : ~s",
-                [format_datatype(cuttlefish_mapping:default(Match),
-                    cuttlefish_mapping:datatype(Match))]);
-        false ->
-            ?STDOUT("   No default set", [])
+    case Default of
+        undefined ->
+            ?STDOUT("   No default set", []);
+        _ ->
+            ?STDOUT("   Default Value : ~s", [format_datatype(Default, Datatype)])
     end.
 
 -ifndef(TEST).
