@@ -59,8 +59,9 @@ merge_env_conf(Config, Schema) ->
                       cuttlefish_schema:schema(),
                       fun (([{[string()], string()}]) -> any())) -> cuttlefish_conf:conf()).
 merge_env_conf(Config, Schema, LogFun) ->
-    Envs = match_env(getenv(), Schema, LogFun),
-    lists:ukeymerge(1, Envs, Config).
+    {ActiveEnvs, KeysToDelete} = match_env(getenv(), Schema, LogFun),
+    Config0 = lists:foldl(fun (Key, A) -> lists:keydelete(Key, 1, A) end, Config, KeysToDelete),
+    lists:ukeymerge(1, ActiveEnvs, Config0).
 
 -spec (getenv() -> cuttlefish_conf:conf()).
 getenv() ->
@@ -73,7 +74,9 @@ match_env(AllEnvs, {_, Mappings, _}, LogFun) ->
     Override = lists:ukeysort(1, match_override_env(Envs, Mappings)),
     Active = lists:ukeymerge(1, Override, Default),
     _ = [LogFun(Key, Value) || {Key, Value} <- Active],
-    Active.
+    ActiveEnvs = lists:filter(fun ({_, ""}) -> false; (_) -> true end, Active),
+    KeysToDelete = lists:filtermap(fun ({K, ""}) -> {true, K}; (_) -> false end, Active),
+    {ActiveEnvs, KeysToDelete}.
 
 match_default_env(Envs, Mappings) ->
     lists:filtermap(fun (KV) -> do_match_default_env(KV, Mappings) end, Envs).
