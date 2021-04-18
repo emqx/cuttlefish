@@ -243,9 +243,9 @@ describe_default(#{datatype := Datatype, default := Default}) ->
     end.
 
 md(ParsedArgs) ->
-    {_, Mappings, _} = load_schema(ParsedArgs),
+    Schema = load_schema(ParsedArgs),
     Title = cuttlefish_markdown:h2(proplists:get_value(title, ParsedArgs)),
-    ?STDOUT("~s", [Title ++ cuttlefish_markdown:md(Mappings)]).
+    ?STDOUT("~s", [Title ++ cuttlefish_markdown:md(Schema)]).
 
 -ifndef(TEST).
 stop_deactivate() ->
