@@ -172,6 +172,13 @@ duration_test() ->
     ErrConfig = cuttlefish_generator:map(Schema, Conf2),
     ?assertMatch({error, transform_datatypes, _}, ErrConfig).
 
+array_test() ->
+    Schema = cuttlefish_schema:files([tp("array.schema")]),
+
+    {ok, Conf} = hocon:binary(<<"a.b = [foo, bar]\n">>, #{convert => [array_to_object], format => proplists}),
+    NewConfig = cuttlefish_generator:map(Schema, Conf),
+    ?assertEqual([{internal, [{key, ["foo", "bar"]}]}], NewConfig).
+
 proplist_equals(Expected, Actual) ->
     ExpectedKeys = lists:sort(proplists:get_keys(Expected)),
     ActualKeys = lists:sort(proplists:get_keys(Actual)),

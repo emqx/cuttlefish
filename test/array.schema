@@ -1,0 +1,8 @@
+{mapping, "a.b.$idx", "internal.key", [
+    {datatype, string}
+]}.
+
+{translation, "internal.key", fun (Conf) ->
+    KVs = cuttlefish_variable:filter_by_prefix("a.b", Conf),
+    [V || {_, V} <- lists:reverse(KVs)]
+end}.
