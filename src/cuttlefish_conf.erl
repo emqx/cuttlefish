@@ -67,20 +67,23 @@ files(ListOfConfFiles) ->
 
 -spec file(file:name()) -> conf() | cuttlefish_error:errorlist().
 file(Filename) ->
-    case hocon:load(Filename, #{delete_null => true, format => proplists}) of
+    case hocon:load(Filename, #{delete_null => true, format => proplists, convert => [array_to_object]}) of
         {error, Reason} ->
             %% Reason is an atom via file:open
             {errorlist, [{error, {file_open, {Filename, Reason}}}]};
         {ok, Conf} ->
-            %% Conf is a proplist, check if any of the values are cuttlefish_errors
-            {_, Values} = lists:unzip(Conf),
-            case cuttlefish_error:filter(Values) of
-                {errorlist, []} ->
-                    remove_duplicates(Conf);
-                {errorlist, ErrorList} ->
-                    NewErrorList = [ {error, {in_file, {Filename, E}}} || {error, E} <- ErrorList ],
-                    {errorlist, NewErrorList}
-            end
+            Conf
+    end.
+
+text(Bin) when is_binary(Bin) ->
+    text(binary_to_list(Bin));
+text(Str) when is_list(Str) ->
+    case hocon:binary(Str, #{delete_null => true, format => proplists, convert => [array_to_object]}) of
+        {error, Reason} ->
+            %% Reason is an atom via file:open
+            {errorlist, [{error, {read_text, {Str, Reason}}}]};
+        {ok, Conf} ->
+            Conf
     end.
 
 -spec generate([cuttlefish_mapping:mapping()]) -> [string()].

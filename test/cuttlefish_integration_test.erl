@@ -162,20 +162,20 @@ duration_test() ->
 
     %% Test that the duration parsing doesn't emit "error" into the
     %% config instead of the extended type.
-    {ok, Conf} = hocon:binary(<<"a.b.c = foo\n">>, #{format => proplists}),
+    Conf = cuttlefish_conf:text(<<"a.b.c = foo\n">>),
     NewConfig = cuttlefish_generator:map(Schema, Conf),
     ?assertEqual(foo, proplists:get_value(duration_extended, proplists:get_value(cuttlefish, NewConfig))),
 
     %% Test that for a non-extended duration, a bad value results in
     %% an erroroneous config, not emitting error.
-    {ok, Conf2} = hocon:binary(<<"b.c = fish\n">>, #{format => proplists}),
+    Conf2 = cuttlefish_conf:text(<<"b.c = fish\n">>),
     ErrConfig = cuttlefish_generator:map(Schema, Conf2),
     ?assertMatch({error, transform_datatypes, _}, ErrConfig).
 
 array_test() ->
     Schema = cuttlefish_schema:files([tp("array.schema")]),
 
-    {ok, Conf} = hocon:binary(<<"a.b = [foo, bar]\n">>, #{convert => [array_to_object], format => proplists}),
+    Conf = cuttlefish_conf:text(<<"a.b = [foo, bar]\n">>),
     NewConfig = cuttlefish_generator:map(Schema, Conf),
     ?assertEqual([{internal, [{key, ["foo", "bar"]}]}], NewConfig).
 
