@@ -47,10 +47,18 @@ map(Schema, Config, ConfFile) ->
     map(Schema, Config, ConfFile, fun (_, _) -> ok end).
 
 map(Schema, Config, ConfFile, LogFun) ->
+    map(Schema, Config, ConfFile, LogFun, #{with_env_override => true}).
+
+map(Schema, Config, ConfFile, LogFun, Opts) ->
     IncludeFile = lists:filter(fun({K, _}) -> K =:= include_file end, Config),
     IncludedConfig = merge_include_conf(Config -- IncludeFile, IncludeFile, ConfFile),
-    AllConfig = merge_env_conf(IncludedConfig, Schema, LogFun),
-    map_add_defaults(Schema, AllConfig).
+    case maps:get(with_env_override, Opts, undefined) of
+        true ->
+            AllConfig = merge_env_conf(IncludedConfig, Schema, LogFun),
+            map_add_defaults(Schema, AllConfig);
+        _ ->
+            map_add_defaults(Schema, IncludedConfig)
+    end.
 
 merge_env_conf(Config, Schema) ->
     merge_env_conf(Config, Schema, fun (_, _) -> ok end).
@@ -1364,6 +1372,10 @@ env_override_test() ->
     ?assertEqual("foo_override", proplists:get_value(somekey, NewConfig)),
     ?assertEqual("bar_override", proplists:get_value(otherkey, NewConfig)),
     ?assertEqual("baz_override", proplists:get_value(fuzzykey, NewConfig)),
+    NewConfigNoEnv = with_envs(fun map/5, [{Translations, Mappings, []},
+                                           Conf, undefined,
+                                           fun (_, _) -> ok end, #{with_env_override => false}], Envs),
+    ?assertEqual("foo", proplists:get_value(somekey, NewConfigNoEnv)),
     ok.
 
 env_override_unset_test() ->
