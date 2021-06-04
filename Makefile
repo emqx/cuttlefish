@@ -12,7 +12,7 @@ $(REBAR):
 	@chmod +x ./rebar3
 
 .PHONY: deps
-deps:
+deps: $(REBAR)
 	$(REBAR) get-deps
 
 .PHONY: distclean
